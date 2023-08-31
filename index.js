@@ -13,7 +13,7 @@ const app = express();
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "https://sandbox.vnpayment.vn"],
   })
 );
 app.use(express.json());
@@ -24,7 +24,6 @@ dotenv.config();
 app.use("/v1/auth", authRoutes);
 app.use("/v1/user", userRoutes);
 app.use("/v1/public", publicRoutes);
-
 
 mongoose
   .connect(process.env.MONGODB_URL)

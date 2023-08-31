@@ -8,6 +8,7 @@ router.get("/products/:id",  publicControllers.getSingleProductByID)
 
 router.get("/categories",  publicControllers.getCategories)
 
+router.get("/getProductReview/:productID", publicControllers.getProductReview)
 
 
 module.exports = router
