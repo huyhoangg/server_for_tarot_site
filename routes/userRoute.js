@@ -29,5 +29,17 @@ router.post("/postReview", middlewareControllers.verifyToken, userControllers.po
 
 router.get("/getReview", middlewareControllers.verifyToken, userControllers.getReview)
 
+router.get("/getLoyaltyPoints", middlewareControllers.verifyToken, userControllers.getLoyaltyPoints)
+
+router.get("/getLoyaltyInfo", middlewareControllers.verifyToken, userControllers.getLoyaltyInfo)
+
+router.get("/getRedeemVouchers", middlewareControllers.verifyToken, userControllers.getVouchersToRedeem)
+
+router.post("/redeemVoucher", middlewareControllers.verifyToken, userControllers.redeemVoucher)
+
+router.get("/getUserVouchers", middlewareControllers.verifyToken, userControllers.getUserVouchers)
+
+router.get("/getUserVoucher/:voucherId", middlewareControllers.verifyToken, userControllers.getUserVoucher)
+
 
 module.exports = router

@@ -4,6 +4,8 @@ const Invoice = require("../models/invoice.js");
 const Review = require("../models/review.js");
 
 const moment = require("moment");
+const loyaltyProgramAdmin = require("../models/loyaltyProgramAdmin.js");
+const loyaltyProgramUser = require("../models/loyaltyProgramUser.js");
 
 function sortObject(obj) {
   let sorted = {};
@@ -267,6 +269,7 @@ const userControllers = {
           vnp_OrderId: req.body.vnp_OrderId,
         },
         products,
+        promo: req.body.promoId,
       });
 
       const saveInvoice = await newInvoice.save();
@@ -320,7 +323,19 @@ const userControllers = {
                     upsert: true,
                   }
                 );
+                userControllers.removeVoucher(orderInfo.cusId, orderInfo?.promo)
+                
                 await Cart.findOneAndDelete({ cusId: orderInfo.cusId });
+                const hasLoyaltyAccumulated =
+                  await userControllers.checkLoyaltyAccumulate(orderId);
+                if (!hasLoyaltyAccumulated) {
+                  await userControllers.addLoyaltyPoint(
+                    orderInfo.cusId,
+                    "paid",
+                    orderInfo?.total.toString().slice(0, -3)
+                  );
+                  await orderInfo.updateOne({ loyalty: true });
+                }
                 res
                   .status(200)
                   .json({ RspCode: "00", Message: "Success", orderId });
@@ -364,11 +379,11 @@ const userControllers = {
       const invoice = await Invoice.findById(orderId).populate(
         "products.productId",
         ["imageURLs", "name", "describe", "price"]
-      );
+      ).populate("cusId");
       if (!invoice) {
         return res.status(200).json("Not exist this invoice");
       }
-      if (invoice.cusId != userID) {
+      if (invoice.cusId._id != userID) {
         return res.status(200).json("None of permission");
       }
       res.status(200).json(invoice);
@@ -452,6 +467,7 @@ const userControllers = {
           },
         }
       );
+      await userControllers.addLoyaltyPoint(userID, "review");
       res.status(200).json(reviewExist);
     } catch (error) {
       console.error(error);
@@ -487,7 +503,258 @@ const userControllers = {
       res.status(500).json({ error: "Internal server error" });
     }
   },
-  
+  getLoyaltyInfo: async (req, res) => {
+    try {
+      const loyalty_data = await loyaltyProgramAdmin.find({});
+
+      res.status(200).json(loyalty_data[0]);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  getLoyaltyPoints: async (req, res) => {
+    try {
+      const userID = req.user.id;
+
+      const user_loyalty = await loyaltyProgramUser.findOne({ cusId: userID });
+
+      const { points } = user_loyalty;
+
+      const num_orders = await Invoice.find({
+        cusId: userID,
+        status: "paid",
+      }).count();
+
+      res.status(200).json({ loyaltyPoints: points, ordersPoints: num_orders });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  addLoyaltyPoint: async (userID, option, amount) => {
+    try {
+      const loyalty_data = await loyaltyProgramAdmin.find({});
+      const { pointReview, pointPaid } = loyalty_data[0];
+      if (option === "paid") {
+        let to_inc = 0;
+        amount ? (to_inc = amount) : (to_inc = pointPaid);
+        await loyaltyProgramUser.findOneAndUpdate(
+          { cusId: userID },
+          {
+            $inc: { points: Number(to_inc) },
+          }
+        );
+        userControllers.saveHistoryLoyaltyPoints(
+          userID,
+          amount,
+          "thanh toan don hang"
+        );
+        return 0;
+      } else if (option === "review") {
+        await loyaltyProgramUser.findOneAndUpdate(
+          { cusId: userID },
+          {
+            $inc: { points: Number(pointReview) },
+          }
+        );
+        userControllers.saveHistoryLoyaltyPoints(
+          userID,
+          pointReview,
+          "review san pham"
+        );
+        return 0;
+      } else {
+        return "missing option";
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  subtractLoyaltyPoint: async (userID, point) => {
+    try {
+      await loyaltyProgramUser.findOneAndUpdate(
+        { cusId: userID },
+        {
+          $inc: { points: -Number(point) },
+        }
+      );
+      userControllers.saveHistoryLoyaltyPoints(
+        userID,
+        -Number(point),
+        "đổi mã giảm giá"
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  checkLoyaltyAccumulate: async (invoiceID) => {
+    try {
+      const invoice = await Invoice.findById(invoiceID);
+      return invoice.loyalty;
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  createLoyaltyProgram: async (userID) => {
+    try {
+      const new_user_loyalty = new loyaltyProgramUser({
+        cusId: userID,
+      });
+      const save = await new_user_loyalty.save();
+      return save;
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  saveHistoryLoyaltyPoints: async (userID, point, title) => {
+    try {
+      const hist = {
+        title,
+        point,
+      };
+      return await loyaltyProgramUser.findOneAndUpdate(
+        { cusId: userID },
+        { $push: { history: hist } }
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  removeVoucher: async (userID, voucherId) => {
+    try {
+      return await loyaltyProgramUser.findOneAndUpdate(
+        { cusId: userID },
+        { $pull: { vouchers: { _id: voucherId } } }
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  getVouchersToRedeem: async (req, res) => {
+    try {
+      const loyalty_data = await loyaltyProgramAdmin.find({});
+      const { vouchers } = loyalty_data[0];
+
+      res.status(200).json(vouchers);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  redeemVoucher: async (req, res) => {
+    try {
+      const voucherId = req.body.voucherId;
+      const loyalty_data = await loyaltyProgramAdmin.find({});
+
+      const voucher = loyalty_data[0].vouchers.filter(
+        (data) => data._id == voucherId
+      );
+
+      const userID = req.user.id;
+
+      const user_loyalty = await loyaltyProgramUser.findOne({ cusId: userID });
+
+      const { points } = user_loyalty;
+
+      if (points >= voucher[0].points) {
+        await loyaltyProgramUser.findOneAndUpdate(
+          { cusId: userID },
+          {
+            $push: {
+              vouchers: {
+                voucherId,
+                code: Math.floor(Math.random() * Date.now()).toString(36),
+              },
+            },
+          }
+        );
+        userControllers.subtractLoyaltyPoint(userID, voucher[0].points);
+        res.status(200).json("Redeemed");
+      } else {
+        res.status(200).json("Not enough point");
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  getUserVouchers: async (req, res) => {
+    try {
+      const userID = req.user.id;
+
+      const loyalty_data = await loyaltyProgramAdmin.find({});
+
+      const user_loyalty = await loyaltyProgramUser.findOne({ cusId: userID });
+
+      const voucher_available = loyalty_data[0].vouchers;
+
+      if (user_loyalty.vouchers.length == 0) {
+        return res.status(200).json(null);
+      }
+
+      const format_voucher = user_loyalty.vouchers.map((voucher) => {
+        const voucherDetail = voucher_available.find(
+          (_voucher) => _voucher._id.toString() == voucher.voucherId.toString()
+        );
+        return {
+          _id: voucher._id,
+          value: voucherDetail.value,
+          name: voucherDetail.title,
+          code: voucher.code,
+          image: voucherDetail.image,
+        };
+      });
+
+      res.status(200).json(format_voucher);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  getUserVoucher: async (req, res) => {
+    try {
+      const userID = req.user.id;
+
+      const voucherId = req.params.voucherId;
+
+      const loyalty_data = await loyaltyProgramAdmin.find({});
+
+      const user_loyalty = await loyaltyProgramUser.findOne({ cusId: userID });
+
+      const voucher_available = loyalty_data[0].vouchers;
+
+      if (user_loyalty.vouchers.length == 0) {
+        return res.status(200).json("invalid voucher, try again !");
+      }
+
+      const valid_voucher = user_loyalty.vouchers.find(
+        (_voucher) => _voucher.code == voucherId
+      );
+
+      if (!valid_voucher) {
+        return res.status(200).json("invalid voucher, try again !");
+      }
+
+      const voucherDetail = voucher_available.find(
+        (_voucher) =>
+          _voucher._id.toString() == valid_voucher.voucherId.toString()
+      );
+
+      if (!voucherDetail) {
+        return res.status(200).json("voucher not existed anymore !");
+      }
+
+      const { title, value } = voucherDetail;
+
+      res
+        .status(200)
+        .json({ title, value, code: voucherId, _id: valid_voucher._id });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
 };
 
 module.exports = userControllers;

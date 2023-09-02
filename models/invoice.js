@@ -19,10 +19,12 @@ const invoiceSchema = new mongoose.Schema({
       _id: false,
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
       quantity: { type: Number, default: 1 },
-      isReview: {type: Boolean, default: false}
+      isReview: { type: Boolean, default: false },
     },
   ],
   status: { type: String, default: "pending" },
+  promo: { type: mongoose.Schema.Types.ObjectId },
+  loyalty: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("invoice", invoiceSchema);

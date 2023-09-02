@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user.js");
 const jwt = require("jsonwebtoken");
+const userControllers = require("../controllers/userControllers.js")
 
 const authControllers = {
   registerUser: async (req, res) => {
@@ -26,7 +27,8 @@ const authControllers = {
       });
 
       const user = await newUser.save();
-      res.status(200).json(user.email);
+      userControllers.createLoyaltyProgram(user._id)
+      res.status(200).json(user);
     } catch (error) {
       res.status(500).json(error);
     }
