@@ -33,6 +33,8 @@ router.get("/getLoyaltyPoints", middlewareControllers.verifyToken, userControlle
 
 router.get("/getLoyaltyInfo", middlewareControllers.verifyToken, userControllers.getLoyaltyInfo)
 
+router.get("/getLoyaltyHistory", middlewareControllers.verifyToken, userControllers.getLoyaltyHistory)
+
 router.get("/getRedeemVouchers", middlewareControllers.verifyToken, userControllers.getVouchersToRedeem)
 
 router.post("/redeemVoucher", middlewareControllers.verifyToken, userControllers.redeemVoucher)
@@ -40,6 +42,10 @@ router.post("/redeemVoucher", middlewareControllers.verifyToken, userControllers
 router.get("/getUserVouchers", middlewareControllers.verifyToken, userControllers.getUserVouchers)
 
 router.get("/getUserVoucher/:voucherId", middlewareControllers.verifyToken, userControllers.getUserVoucher)
+
+router.get("/getRewardToRedeem", middlewareControllers.verifyToken, userControllers.getRewardToRedeem)
+
+router.post("/redeemReward", middlewareControllers.verifyToken, userControllers.redeemReward)
 
 
 module.exports = router

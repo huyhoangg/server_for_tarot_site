@@ -17,6 +17,10 @@ const loyaltyProgramUserSchema = new mongoose.Schema({
       code: { type: String },
     },
   ],
+  reward: {
+    product: { type: mongoose.Schema.Types.ObjectId },
+    status: { type: Boolean, default: false },
+  },
 });
 
 module.exports = mongoose.model(

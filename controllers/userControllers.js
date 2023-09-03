@@ -323,8 +323,11 @@ const userControllers = {
                     upsert: true,
                   }
                 );
-                userControllers.removeVoucher(orderInfo.cusId, orderInfo?.promo)
-                
+                userControllers.removeVoucher(
+                  orderInfo.cusId,
+                  orderInfo?.promo
+                );
+
                 await Cart.findOneAndDelete({ cusId: orderInfo.cusId });
                 const hasLoyaltyAccumulated =
                   await userControllers.checkLoyaltyAccumulate(orderId);
@@ -376,10 +379,14 @@ const userControllers = {
     try {
       const userID = req.user.id;
       const orderId = req.params.orderId;
-      const invoice = await Invoice.findById(orderId).populate(
-        "products.productId",
-        ["imageURLs", "name", "describe", "price"]
-      ).populate("cusId");
+      const invoice = await Invoice.findById(orderId)
+        .populate("products.productId", [
+          "imageURLs",
+          "name",
+          "describe",
+          "price",
+        ])
+        .populate("cusId");
       if (!invoice) {
         return res.status(200).json("Not exist this invoice");
       }
@@ -548,7 +555,7 @@ const userControllers = {
         userControllers.saveHistoryLoyaltyPoints(
           userID,
           amount,
-          "thanh toan don hang"
+          "thanh toán đơn hàng"
         );
         return 0;
       } else if (option === "review") {
@@ -561,7 +568,7 @@ const userControllers = {
         userControllers.saveHistoryLoyaltyPoints(
           userID,
           pointReview,
-          "review san pham"
+          "review sản phẩm"
         );
         return 0;
       } else {
@@ -750,6 +757,73 @@ const userControllers = {
       res
         .status(200)
         .json({ title, value, code: voucherId, _id: valid_voucher._id });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  getRewardToRedeem: async (req, res) => {
+    try {
+      const loyalty_data = await loyaltyProgramAdmin.find({});
+      const { reward } = await loyalty_data[0].populate("reward.product", [
+        "name",
+        "imageURLs",
+        "_id",
+      ]);
+
+      res.status(200).json(reward);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  redeemReward: async (req, res) => {
+    try {
+      const loyalty_data = await loyaltyProgramAdmin.find({});
+
+      const { reward } = loyalty_data[0];
+
+      const userID = req.user.id;
+
+      const user_loyalty = await loyaltyProgramUser.findOne({ cusId: userID });
+
+      if (user_loyalty.reward.status) {
+        return res.status(200).json("You redeemed this season");
+      }
+
+      const num_orders = await Invoice.find({
+        cusId: userID,
+        status: "paid",
+      }).count();
+
+      if (num_orders >= reward.point) {
+        await loyaltyProgramUser.findOneAndUpdate(
+          { cusId: userID },
+          {
+            reward: {
+              product: reward.product,
+              status: true,
+            },
+          }
+        );
+        res.status(200).json("Redeem success, it's on the way to you !");
+      } else {
+        res.status(200).json("Not enough order to redeem");
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  getLoyaltyHistory: async (req, res) => {
+    try {
+      const userID = req.user.id;
+
+      const user_loyalty = await loyaltyProgramUser.findOne({ cusId: userID });
+
+      const { history } = user_loyalty;
+
+      res.status(200).json(history);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Internal server error" });

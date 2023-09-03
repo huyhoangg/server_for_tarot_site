@@ -11,6 +11,11 @@ const loyaltyProgramSchema = new mongoose.Schema({
       image: { type: String },
     },
   ],
+  reward: {
+    expired: { type: Date },
+    product: { type: mongoose.Schema.Types.ObjectId, ref: "product" },
+    point: { type: Number },
+  },
 });
 
 module.exports = mongoose.model(
