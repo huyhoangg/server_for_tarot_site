@@ -22,7 +22,7 @@ const middlewareControllers = {
         next();
       }
       else {
-        res.status(403).json("not admin authorize")
+        res.status(403).json("you are not admin !")
       }
     })
   },

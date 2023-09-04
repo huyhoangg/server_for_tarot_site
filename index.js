@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth.js");
 const userRoutes = require("./routes/userRoute.js");
 const publicRoutes = require("./routes/publicRoute.js");
+const adminRoutes = require("./routes/adminRoute.js");
 
 const cookieParser = require("cookie-parser");
 
@@ -13,7 +14,11 @@ const app = express();
 app.use(
   cors({
     credentials: true,
-    origin: ["http://localhost:5173", "https://sandbox.vnpayment.vn"],
+    origin: [
+      "http://localhost:5173",
+      "https://sandbox.vnpayment.vn",
+      "http://localhost:8100",
+    ],
   })
 );
 app.use(express.json());
@@ -24,6 +29,7 @@ dotenv.config();
 app.use("/v1/auth", authRoutes);
 app.use("/v1/user", userRoutes);
 app.use("/v1/public", publicRoutes);
+app.use("/v1/admin", adminRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URL)

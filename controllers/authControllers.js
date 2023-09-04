@@ -78,6 +78,7 @@ const authControllers = {
       .status(200)
       .json({ success: true, message: "User logged out successfully" });
   },
+
 };
 
 module.exports = authControllers;
