@@ -195,7 +195,8 @@ const userControllers = {
     var tmnCode = process.env.VNP_TMN_CODE;
     var secretKey = process.env.VNP_HASH_SECRET;
     var vnpUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    var returnUrl = "http://localhost:5173/thanks";
+    // var returnUrl = "http://localhost:5173/thanks";
+    var returnUrl = "https://eccommerce-web-ww9b.vercel.app/thanks";
 
     var date = new Date();
 
