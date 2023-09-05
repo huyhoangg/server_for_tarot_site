@@ -3,6 +3,7 @@ const User = require("../models/user.js");
 const Invoice = require("../models/invoice.js");
 
 const jwt = require("jsonwebtoken");
+const user = require("../models/user.js");
 
 const adminControllers = {
   getIncomeByInterval: async (req, res) => {
@@ -25,7 +26,13 @@ const adminControllers = {
         break;
       case "year":
         startDate = new Date(startDate.getFullYear(), 0, 1);
-        startDate = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()));
+        startDate = new Date(
+          Date.UTC(
+            startDate.getFullYear(),
+            startDate.getMonth(),
+            startDate.getDate()
+          )
+        );
         break;
       default:
         return res.status(400).json({ error: "Invalid interval" });
@@ -79,13 +86,70 @@ const adminControllers = {
           });
         }
       } else if (interval == "year") {
+        const totalAccumulate = invoice.reduce(
+          (acc, curr) => acc + curr.total,
+          0
+        );
 
-        const totalAccumulate = invoice.reduce((acc, curr) => acc + curr.total, 0);
-          
-        result = {total : totalAccumulate}
+        result = { total: totalAccumulate };
       }
 
       res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  getTotalPaidOrder: async (req, res) => {
+    try {
+      const total_invoice = await Invoice.find({
+        status: "paid",
+      }).count();
+      res.json({ total: total_invoice });
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  getTotalUser: async (req, res) => {
+    try {
+      const total_user = await User.find({}).count();
+      res.json({ total: total_user });
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  getAllUser: async (req, res) => {
+    try {
+      const users = await User.find({});
+      const invoice = await Invoice.aggregate([
+        {
+          $match: {
+            status: "paid",
+          },
+        },
+        {
+          $group: {
+            _id: "$cusId",
+            totalPay: { $sum: "$total" },
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const format_users = users.map((user) => {
+        const found = invoice.find(
+          (inv) => inv._id.toString() === user._id.toString()
+        );
+        if (found) {
+          return {
+            ...user._doc,
+            totalPay: found.totalPay,
+            totalOrder: found.count,
+          };
+        }
+        return user;
+      });
+
+      res.json(format_users);
     } catch (error) {
       res.status(500).json({ error: "An error occurred" });
     }
