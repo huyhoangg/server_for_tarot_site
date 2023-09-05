@@ -18,6 +18,7 @@ app.use(
       "http://localhost:5173",
       "https://sandbox.vnpayment.vn",
       "http://localhost:8100",
+      "https://eccommerce-web-ww9b.vercel.app"
     ],
   })
 );
