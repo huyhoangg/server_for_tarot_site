@@ -13,7 +13,6 @@ const adminControllers = {
     switch (interval) {
       case "week":
         if (startDate.getDay() === 0) {
-          // If today is Sunday
           startDate.setDate(startDate.getDate() - 6);
         } else {
           startDate.setDate(startDate.getDate() - startDate.getDay() + 1);
@@ -24,15 +23,9 @@ const adminControllers = {
         startDate.setDate(1);
         startDate.setUTCHours(0, 0, 0);
         break;
-      case "quarter":
-        const currentMonth = startDate.getMonth();
-        const monthsToSubtract = currentMonth % 3;
-        startDate.setMonth(currentMonth - monthsToSubtract);
-        startDate.setDate(1);
-        startDate.setHours(0, 0, 0, 0);
-        break;
       case "year":
-        startDate = new Date(startDate.getFullYear(), 0, 1); // Start of the year
+        startDate = new Date(startDate.getFullYear(), 0, 1);
+        startDate = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()));
         break;
       default:
         return res.status(400).json({ error: "Invalid interval" });
@@ -85,6 +78,11 @@ const adminControllers = {
             total: groupedByDate[dateString] || 0,
           });
         }
+      } else if (interval == "year") {
+
+        const totalAccumulate = invoice.reduce((acc, curr) => acc + curr.total, 0);
+          
+        result = {total : totalAccumulate}
       }
 
       res.json(result);
