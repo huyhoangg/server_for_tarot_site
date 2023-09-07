@@ -185,16 +185,18 @@ const adminControllers = {
   },
   updateProduct: async (req, res) => {
     try {
-      const productInfo = req.body.productInfo
+      const productInfo = req.body.productInfo;
 
-      const {name, describe, type, author, _id} = productInfo
-
+      const { name, describe, type, author, _id, imageURLs, category } =
+        productInfo;
 
       const product = await Product.findByIdAndUpdate(_id, {
         name,
         describe,
         type,
         author,
+        category,
+        imageURLs,
       });
 
       return res.status(200).json("updated");
