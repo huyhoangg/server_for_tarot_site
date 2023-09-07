@@ -1,6 +1,8 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user.js");
 const Invoice = require("../models/invoice.js");
+const Product = require("../models/product.js");
+const Category = require("../models/category.js");
 
 const jwt = require("jsonwebtoken");
 const user = require("../models/user.js");
@@ -150,6 +152,52 @@ const adminControllers = {
       });
 
       res.json(format_users);
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  getAllProducts: async (req, res) => {
+    try {
+      const products = await Product.find({}).populate("category", [
+        "categoryName",
+        "_id",
+      ]);
+
+      res.json(products);
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  getAllCategories: async (req, res) => {
+    try {
+      const type = req.params.type;
+
+      if (type != "all") {
+        const cat = await Category.find({ type }).select("categoryName _id");
+        return res.status(200).json(cat);
+      } else {
+        const cat = await Category.find({});
+        return res.status(200).json(cat);
+      }
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  updateProduct: async (req, res) => {
+    try {
+      const productInfo = req.body.productInfo
+
+      const {name, describe, type, author, _id} = productInfo
+
+
+      const product = await Product.findByIdAndUpdate(_id, {
+        name,
+        describe,
+        type,
+        author,
+      });
+
+      return res.status(200).json("updated");
     } catch (error) {
       res.status(500).json({ error: "An error occurred" });
     }

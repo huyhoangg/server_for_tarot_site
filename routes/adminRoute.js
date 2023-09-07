@@ -11,4 +11,11 @@ router.get("/totalUser", middlewareControllers.verifyAdminToken, adminController
 
 router.get("/allUser", middlewareControllers.verifyAdminToken, adminControllers.getAllUser)
 
+router.get("/allProducts", middlewareControllers.verifyAdminToken, adminControllers.getAllProducts)
+
+router.get("/allCategories/:type", middlewareControllers.verifyAdminToken, adminControllers.getAllCategories)
+
+router.post("/updateProduct", middlewareControllers.verifyAdminToken, adminControllers.updateProduct)
+
+
 module.exports = router
