@@ -176,11 +176,51 @@ const adminControllers = {
         const cat = await Category.find({ type }).select("categoryName _id");
         return res.status(200).json(cat);
       } else {
-        const cat = await Category.find({});
+        const cat = await Category.find({}).select("categoryName _id type");
         return res.status(200).json(cat);
       }
     } catch (error) {
       res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  updateCategory: async (req, res) => {
+    try {
+      const catId = req.body.catInfo._id;
+
+      const cat = await Category.findByIdAndUpdate(catId, {
+        type: req.body.catInfo.type,
+        categoryName: req.body.catInfo.categoryName,
+      });
+      return res.status(200).json("updated");
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  deleteCategory: async (req, res) => {
+    try {
+      const catId = req.params.catId;
+
+      const catdel = await Category.findByIdAndDelete(catId);
+
+      res.status(200).send("deleted");
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  addCategory: async (req, res) => {
+    try {
+      const newCat = new Category({
+        type: req.body.catInfo.type,
+        categoryName: req.body.catInfo.categoryName,
+        products: [],
+      });
+
+      const saveProduct = await newCat.save();
+      res.status(200).send("created");
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
     }
   },
   updateProduct: async (req, res) => {
@@ -200,6 +240,65 @@ const adminControllers = {
       });
 
       return res.status(200).json("updated");
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  addProduct: async (req, res) => {
+    try {
+      const newProduct = new Product({
+        include: req.body.productInfo.include,
+        ibsn: req.body.productInfo.ibsn,
+        type: req.body.productInfo.type,
+        author: req.body.productInfo.author,
+        producer: req.body.productInfo.producer,
+        stock: 1,
+        sold: 0,
+        price: req.body.productInfo.price,
+        describe: req.body.productInfo.describe,
+        category: req.body.productInfo.category,
+        imageURLs: req.body.productInfo.imageURLs,
+        name: req.body.productInfo.name,
+      });
+
+      const saveProduct = await newProduct.save();
+      res.status(200).send("updated");
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  deleteProduct: async (req, res) => {
+    try {
+      const productId = req.params.productId;
+      const product = await Product.findByIdAndDelete(productId);
+
+      res.status(200).send("deleted");
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+  getAllUpcomingOrders: async (req, res) => {
+    try {
+      const total_invoice = await Invoice.find({
+        status: "paid",
+        delivery: false,
+      })
+        .populate("cusId", ["firstName", "lastName", "address", "phone"])
+        .populate("products.productId", ["name", "_id", "price"]);
+      res.json(total_invoice);
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  setDelivery: async (req, res) => {
+    const productId = req.params.productId;
+    try {
+      await Invoice.findByIdAndUpdate(productId, {
+        delivery: true,
+      });
+      res.json("delivery ok");
     } catch (error) {
       res.status(500).json({ error: "An error occurred" });
     }

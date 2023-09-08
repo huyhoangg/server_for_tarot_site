@@ -25,6 +25,7 @@ const invoiceSchema = new mongoose.Schema({
   status: { type: String, default: "pending" },
   promo: { type: mongoose.Schema.Types.ObjectId },
   loyalty: { type: Boolean, default: false },
+  delivery: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("invoice", invoiceSchema);

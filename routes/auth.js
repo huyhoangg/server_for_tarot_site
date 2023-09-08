@@ -5,6 +5,8 @@ const router = require("express").Router()
 
 router.post("/register", authControllers.registerUser)
 router.post("/login", authControllers.loginUser)
+router.post("/loginAdmin", authControllers.loginAdminUser)
+
 router.post("/logout", authControllers.logOutUser)
 
 router.get("/test", middlewareControllers.verifyToken, (req, res)=>{
