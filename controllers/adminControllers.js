@@ -6,6 +6,7 @@ const Category = require("../models/category.js");
 
 const jwt = require("jsonwebtoken");
 const user = require("../models/user.js");
+const loyaltyProgramAdmin = require("../models/loyaltyProgramAdmin.js");
 
 const adminControllers = {
   getIncomeByInterval: async (req, res) => {
@@ -283,7 +284,6 @@ const adminControllers = {
     try {
       const total_invoice = await Invoice.find({
         status: "paid",
-        delivery: false,
       })
         .populate("cusId", ["firstName", "lastName", "address", "phone"])
         .populate("products.productId", ["name", "_id", "price"]);
@@ -300,6 +300,114 @@ const adminControllers = {
       });
       res.json("delivery ok");
     } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  getAdminVouchers: async (req, res) => {
+    try {
+      const loyalty = await loyaltyProgramAdmin.find({});
+      const { vouchers } = loyalty[0];
+      res.status(200).json(vouchers);
+    } catch (error) {
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  updateVoucher: async (req, res) => {
+    const voucherId = req.params.voucherId;
+    const updatedVoucherData = req.body.voucherInfo;
+
+    try {
+      const update = {
+        $set: {
+          "vouchers.$[elem].title": updatedVoucherData.title,
+          "vouchers.$[elem].value": updatedVoucherData.value,
+          "vouchers.$[elem].points": updatedVoucherData.points,
+          "vouchers.$[elem].image": updatedVoucherData.image,
+        },
+      };
+
+      const filter = { "vouchers._id": voucherId };
+
+      const options = {
+        arrayFilters: [{ "elem._id": voucherId }],
+        new: true,
+      };
+
+      const loyalty = await loyaltyProgramAdmin.findOneAndUpdate(
+        filter,
+        update,
+        options
+      );
+
+      if (!loyalty) {
+        return res
+          .status(404)
+          .json({ error: "Loyalty program not found or voucher not found" });
+      }
+
+      res.status(200).json(loyalty);
+    } catch (error) {
+      console.error("Error updating voucher:", error);
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  createVoucher: async (req, res) => {
+    const newVoucherData = req.body.voucherInfo;
+    try {
+      const update = {
+        $push: {
+          vouchers: newVoucherData,
+        },
+      };
+      const filter = {};
+
+      const options = {
+        new: true,
+      };
+
+      const loyalty = await loyaltyProgramAdmin.findOneAndUpdate(
+        filter,
+        update,
+        options
+      );
+
+      if (!loyalty) {
+        return res.status(404).json({ error: "Loyalty program not found" });
+      }
+
+      res.status(200).json(loyalty);
+    } catch (error) {
+      console.error("Error creating voucher:", error);
+      res.status(500).json({ error: "An error occurred" });
+    }
+  },
+  removeVoucher: async (req, res) => {
+    const voucherId = req.params.voucherId;
+
+    try {
+      const update = {
+        $pull: {
+          vouchers: { _id: voucherId },
+        },
+      };
+
+      const options = {
+        new: true,
+      };
+
+      const loyalty = await loyaltyProgramAdmin.findOneAndUpdate(
+        {},
+        update,
+        options
+      );
+
+      if (!loyalty) {
+        return res.status(404).json({ error: "Loyalty program not found" });
+      }
+
+      res.status(200).json(loyalty);
+    } catch (error) {
+      console.error("Error removing voucher:", error);
       res.status(500).json({ error: "An error occurred" });
     }
   },

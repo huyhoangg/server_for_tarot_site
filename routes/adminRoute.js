@@ -84,5 +84,24 @@ router.post(
   middlewareControllers.verifyAdminToken,
   adminControllers.setDelivery
 );
-
+router.get(
+  "/adminVoucher",
+  middlewareControllers.verifyAdminToken,
+  adminControllers.getAdminVouchers
+);
+router.post(
+  "/updateVoucher/:voucherId",
+  middlewareControllers.verifyAdminToken,
+  adminControllers.updateVoucher
+);
+router.post(
+  "/createVoucher",
+  middlewareControllers.verifyAdminToken,
+  adminControllers.createVoucher
+);
+router.post(
+  "/removeVoucher/:voucherId",
+  middlewareControllers.verifyAdminToken,
+  adminControllers.removeVoucher
+);
 module.exports = router;
